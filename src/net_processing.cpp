@@ -1180,7 +1180,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         }
 
         // Disconnect based on strSubVer
-        if (strncmp(SanitizeString(strSubVer).c_str(), "/OmegaCoin Core:0.12.2.3/", 25))
+        if (!strncmp(SanitizeString(strSubVer).c_str(), "/OmegaCoin Core:0.12.2.3/", 25))
         {
             // disconnect from peers with bad subVer
             LogPrintf("peer=%d using bad subVer version %s; disconnecting\n", pfrom->id, SanitizeString(strSubVer));
