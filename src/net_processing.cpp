@@ -40,6 +40,7 @@
 #endif // ENABLE_WALLET
 #include "privatesend-server.h"
 
+#include <cstring>
 #include <boost/thread.hpp>
 
 using namespace std;
@@ -703,12 +704,12 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
     case MSG_BLOCK:
         return mapBlockIndex.count(inv.hash);
 
-    /* 
+    /*
         OmegaCoin Related Inventory Messages
 
         --
 
-        We shouldn't update the sync times for each of the messages when we already have it. 
+        We shouldn't update the sync times for each of the messages when we already have it.
         We're going to be asking many nodes upfront for the full inventory list, so we'll get duplicates of these.
         We want to only update the time on new hits, so that we can time out appropriately if needed.
     */
@@ -1176,6 +1177,17 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             LogPrintf("connected to self at %s, disconnecting\n", pfrom->addr.ToString());
             pfrom->fDisconnect = true;
             return true;
+        }
+
+        // Disconnect based on strSubVer
+        if (strncmp(SanitizeString(strSubVer).c_str(), "/OmegaCoin Core:0.12.2.3/", 25))
+        {
+            // disconnect from peers with bad subVer
+            LogPrintf("peer=%d using bad subVer version %s; disconnecting\n", pfrom->id, SanitizeString(strSubVer));
+            connman.PushMessageWithVersion(pfrom, INIT_PROTO_VERSION, NetMsgType::REJECT, strCommand, REJECT_OBSOLETE,
+                               strprintf("bad subVer %s", SanitizeString(strSubVer)));
+            pfrom->fDisconnect = true;
+            return false;
         }
 
         if (pfrom->fInbound && addrMe.IsRoutable())
